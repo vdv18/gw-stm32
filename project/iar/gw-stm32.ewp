@@ -311,7 +311,10 @@
         </option>
         <option>
           <name>CCIncludePath2</name>
-          <state>$PROJ_DIR$\..\..\</state>
+          <state>$PROJ_DIR$\..\..\sources</state>
+          <state>$PROJ_DIR$\..\..\libraries</state>
+          <state>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Inc</state>
+          <state>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Inc</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -1930,9 +1933,135 @@
     </settings>
   </configuration>
   <group>
+    <name>libraries</name>
+    <excluded>
+      <configuration>Debug</configuration>
+    </excluded>
+    <group>
+      <name>STM32_USB_Device_Library</name>
+      <group>
+        <name>Class</name>
+        <group>
+          <name>MSC</name>
+          <group>
+            <name>Inc</name>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Inc\usbd_msc.h</name>
+            </file>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Inc\usbd_msc_bot.h</name>
+            </file>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Inc\usbd_msc_data.h</name>
+            </file>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Inc\usbd_msc_scsi.h</name>
+            </file>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Inc\usbd_msc_storage_template.h</name>
+            </file>
+          </group>
+          <group>
+            <name>Src</name>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Src\usbd_msc.c</name>
+            </file>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Src\usbd_msc_bot.c</name>
+            </file>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Src\usbd_msc_data.c</name>
+            </file>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Src\usbd_msc_scsi.c</name>
+            </file>
+            <file>
+              <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Src\usbd_msc_storage_template.c</name>
+              <excluded>
+                <configuration>Debug</configuration>
+              </excluded>
+            </file>
+          </group>
+        </group>
+      </group>
+      <group>
+        <name>Core</name>
+        <group>
+          <name>Inc</name>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Inc\usbd_conf_template.h</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Inc\usbd_core.h</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Inc\usbd_ctlreq.h</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Inc\usbd_def.h</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Inc\usbd_ioreq.h</name>
+          </file>
+        </group>
+        <group>
+          <name>Src</name>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Src\usbd_conf_template.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Src\usbd_core.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Src\usbd_ctlreq.c</name>
+          </file>
+          <file>
+            <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Src\usbd_ioreq.c</name>
+          </file>
+        </group>
+      </group>
+    </group>
+    <group>
+      <name>STM32_USB_Host_Library</name>
+      <group>
+        <name>Class</name>
+      </group>
+      <group>
+        <name>Core</name>
+      </group>
+    </group>
+  </group>
+  <group>
     <name>project</name>
     <file>
       <name>$PROJ_DIR$\startup_stm32l476xx.s</name>
+    </file>
+  </group>
+  <group>
+    <name>sdmmc</name>
+  </group>
+  <group>
+    <name>usb</name>
+    <excluded>
+      <configuration>Debug</configuration>
+    </excluded>
+    <file>
+      <name>$PROJ_DIR$\..\..\sources\usbd_conf.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\sources\usbd_conf.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\sources\usbd_desc.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\sources\usbd_desc.h</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\sources\usbd_storage.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\sources\usbd_storage.h</name>
     </file>
   </group>
   <file>
@@ -1943,6 +2072,9 @@
   </file>
   <file>
     <name>$PROJ_DIR$\..\..\sources\main.c</name>
+  </file>
+  <file>
+    <name>$PROJ_DIR$\..\..\sources\main.h</name>
   </file>
   <file>
     <name>$PROJ_DIR$\..\..\sources\stm32l476xx.h</name>
