@@ -2607,6 +2607,12 @@
   </group>
   <group>
     <name>sdmmc</name>
+    <file>
+      <name>$PROJ_DIR$\..\..\sources\microsd.c</name>
+    </file>
+    <file>
+      <name>$PROJ_DIR$\..\..\sources\microsd.h</name>
+    </file>
   </group>
   <group>
     <name>usb</name>

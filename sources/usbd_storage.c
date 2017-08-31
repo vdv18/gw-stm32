@@ -47,7 +47,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_storage.h"
-//#include "stm32l476g_eval_sd.h"
+#include "microsd.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -104,11 +104,10 @@ int8_t STORAGE_Init(uint8_t lun)
 {
   int8_t ret = -1;  
 
-//  if(BSP_SD_Init() == MSD_OK)
-//  {
-//    ret = 0;
-//  }
-  ret = 0;
+  if(MICRO_SD_Init() == MSD_OK)
+  {
+    ret = 0;
+  }
   return ret;
 }
 
@@ -121,20 +120,17 @@ int8_t STORAGE_Init(uint8_t lun)
   */
 int8_t STORAGE_GetCapacity(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
-  //BSP_SD_CardInfo info;
+  MICRO_SD_CardInfo info;
   int8_t ret = -1;  
   
-//  if(BSP_SD_IsDetected() != SD_NOT_PRESENT)
-//  {
-//    BSP_SD_GetCardInfo(&info);
-//    
-//    *block_num =  info.LogBlockNbr  - 1;
-//    *block_size = info.LogBlockSize;
-//    ret = 0;
-//  }
-  *block_num = 15523839;
-  *block_size = 512;
-  ret= 0;
+  if(MICRO_SD_IsDetected() != SD_NOT_PRESENT)
+  {
+    MICRO_SD_GetCardInfo(&info);
+    
+    *block_num =  info.LogBlockNbr  - 1;
+    *block_size = info.LogBlockSize;
+    ret = 0;
+  }
   return ret;
 }
 
@@ -148,23 +144,23 @@ int8_t STORAGE_IsReady(uint8_t lun)
   static int8_t prev_status = 0;
   int8_t ret = -1;
   ret = 0;
-//  if(BSP_SD_IsDetected() != SD_NOT_PRESENT)
-//  {
-//    if(prev_status < 0)
-//    {
-//      BSP_SD_Init();
-//      prev_status = 0;
-//      
-//    }
-//    if(BSP_SD_GetCardState() == SD_TRANSFER_OK)
-//    {
-//      ret = 0;
-//    }
-//  }
-//  else if(prev_status == 0)
-//  {
-//    prev_status = -1;
-//  }
+  if(MICRO_SD_IsDetected() != SD_NOT_PRESENT)
+  {
+    if(prev_status < 0)
+    {
+      MICRO_SD_Init();
+      prev_status = 0;
+      
+    }
+    if(MICRO_SD_GetCardState() == SD_TRANSFER_OK)
+    {
+      ret = 0;
+    }
+  }
+  else if(prev_status == 0)
+  {
+    prev_status = -1;
+  }
   return ret;
 }
 
@@ -190,14 +186,14 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_l
   int8_t ret = -1;  
   uint32_t timeout = 100000;
   
-//  BSP_SD_ReadBlocks((uint32_t *)buf, blk_addr, blk_len, SD_DATATIMEOUT);
-//  while(BSP_SD_GetCardState() != SD_TRANSFER_OK)
-//  {
-//    if (timeout-- == 0)
-//    {
-//      return ret;
-//    }
-//  }
+  MICRO_SD_ReadBlocks((uint32_t *)buf, blk_addr, blk_len, SD_DATATIMEOUT);
+  while(MICRO_SD_GetCardState() != SD_TRANSFER_OK)
+  {
+    if (timeout-- == 0)
+    {
+      return ret;
+    }
+  }
   ret = 0;
 
   return ret;
@@ -215,14 +211,14 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_
   int8_t ret = -1;  
   uint32_t timeout = 100000;  
   
-//  BSP_SD_WriteBlocks((uint32_t *)buf, blk_addr, blk_len, SD_DATATIMEOUT);
-//  while(BSP_SD_GetCardState() != SD_TRANSFER_OK)
-//  {
-//    if (timeout-- == 0)
-//    {
-//      return ret;
-//    }
-//  }
+  MICRO_SD_WriteBlocks((uint32_t *)buf, blk_addr, blk_len, SD_DATATIMEOUT);
+  while(MICRO_SD_GetCardState() != SD_TRANSFER_OK)
+  {
+    if (timeout-- == 0)
+    {
+      return ret;
+    }
+  }
   ret = 0;
 
   return ret;
