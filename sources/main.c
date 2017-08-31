@@ -16,10 +16,14 @@ static list_head_t message_out;
 
 #define USE_LPUART1
 
+#ifdef _TEST_
 void SysTick_Handler()
 {
+  
+  HAL_IncTick();
   timer_tick();
 }
+#endif
 static timer_t timer_1s = 0;
 static timer_t timer_2s = 0;
 static timer_t timer_5s = 0;
@@ -302,6 +306,234 @@ void main()
     timer_handle();
     if(sleep)
       __WFE();
+  }
+}
+#else
+#include "usbd_core.h"
+#include "usbd_desc.h"
+#include "usbd_msc.h"
+#include "usbd_storage.h"
+#include "stm32l4xx_hal.h"
+static void SystemClock_Config(void);
+static void Error_Handler(void);
+USBD_HandleTypeDef USBD_Device;
+extern PCD_HandleTypeDef hpcd;
+
+
+void SysTick_Handler()
+{
+  HAL_IncTick();
+}
+void OTG_FS_IRQHandler(void)
+{
+  HAL_PCD_IRQHandler(&hpcd);
+}
+
+/**
+  * @brief  This function handles DMA2 Channel 4 interrupt request.
+  * @param  None
+  * @retval None
+  */
+//extern PCD_HandleTypeDef hpcd;
+//extern SD_HandleTypeDef uSdHandle;
+//void DMA2_Channel4_IRQHandler(void)
+//{
+//  if((uSdHandle.Context == (SD_CONTEXT_DMA | SD_CONTEXT_READ_SINGLE_BLOCK)) || 
+//     (uSdHandle.Context == (SD_CONTEXT_DMA | SD_CONTEXT_READ_MULTIPLE_BLOCK)))
+//  {
+//    BSP_SD_DMA_Rx_IRQHandler();
+//  }
+//  else if((uSdHandle.Context == (SD_CONTEXT_DMA | SD_CONTEXT_WRITE_SINGLE_BLOCK)) || 
+//          (uSdHandle.Context == (SD_CONTEXT_DMA | SD_CONTEXT_WRITE_MULTIPLE_BLOCK)))
+//  {
+//    BSP_SD_DMA_Tx_IRQHandler();
+//  }    
+//}
+///**
+//  * @brief  This function handles SDMMC1 interrupt request.
+//  * @param  None
+//  * @retval None
+//  */
+//void SDMMC1_IRQHandler(void)
+//{
+//  BSP_SD_IRQHandler();
+//}
+int main()
+{
+  HAL_Init();
+  SystemClock_Config();
+  __HAL_RCC_PWR_CLK_ENABLE();
+  HAL_PWREx_EnableVddUSB();
+  
+  /* Init MSC Application */
+  USBD_Init(&USBD_Device, &MSC_Desc, 0);
+  
+  /* Add Supported Class */
+  USBD_RegisterClass(&USBD_Device, USBD_MSC_CLASS);
+  
+  /* Add Storage callbacks for MSC Class */
+  USBD_MSC_RegisterStorage(&USBD_Device, &USBD_DISK_fops);
+  
+    /* Start Device Process */
+  USBD_Start(&USBD_Device);
+  
+  
+  while(1)
+  {
+  }
+}
+
+
+/**
+  * @brief  System Clock Configuration
+  *         The system Clock is configured as follow : 
+  *
+  *         If define USB_USE_LSE_MSI_CLOCK enabled:
+  *            System Clock source            = PLL (MSI)
+  *            SYSCLK(Hz)                     = 80000000
+  *            HCLK(Hz)                       = 80000000
+  *            AHB Prescaler                  = 1
+  *            APB1 Prescaler                 = 1
+  *            APB2 Prescaler                 = 2
+  *            MSI Frequency(Hz)              = 4800000
+  *            LSE Frequency(Hz)              = 32768
+  *            PLL_M                          = 6
+  *            PLL_N                          = 40
+  *            PLL_P                          = 7
+  *            PLL_Q                          = 4
+  *            PLL_R                          = 4
+  *            Flash Latency(WS)              = 4
+  * 
+  *         If define USB_USE_HSE_CLOCK enabled:
+  *            System Clock source            = PLL (HSE)
+  *            SYSCLK(Hz)                     = 80000000
+  *            HCLK(Hz)                       = 80000000
+  *            AHB Prescaler                  = 1
+  *            APB1 Prescaler                 = 1
+  *            APB2 Prescaler                 = 2
+  *            HSE Frequency(Hz)              = 8000000
+  *            PLL_M                          = 1
+  *            PLL_N                          = 20
+  *            PLL_P                          = 7
+  *            PLL_Q                          = 4
+  *            PLL_R                          = 2
+  *            Flash Latency(WS)              = 4
+  * 
+  * @param  None
+  * @retval None
+  */
+static void SystemClock_Config(void)
+{
+  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_OscInitTypeDef RCC_OscInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
+
+#define USB_USE_LSE_MSI_CLOCK
+#if defined (USB_USE_LSE_MSI_CLOCK)
+ 
+  /* Enable the LSE Oscilator */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSE;
+  RCC_OscInitStruct.LSEState = RCC_LSE_ON;
+  RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_OFF;
+  HAL_RCC_OscConfig(&RCC_OscInitStruct);
+  
+  /* Enable the CSS interrupt in case LSE signal is corrupted or not present */
+  HAL_RCCEx_DisableLSECSS();
+  
+  /* Enable MSI Oscillator and activate PLL with MSI as source */
+  RCC_OscInitStruct.OscillatorType      = RCC_OSCILLATORTYPE_MSI;
+  RCC_OscInitStruct.MSIState            = RCC_MSI_ON;
+  RCC_OscInitStruct.MSICalibrationValue = RCC_MSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.MSIClockRange       = RCC_MSIRANGE_11;
+  RCC_OscInitStruct.PLL.PLLState        = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource       = RCC_PLLSOURCE_MSI;
+  RCC_OscInitStruct.PLL.PLLM            = 6;
+  RCC_OscInitStruct.PLL.PLLN            = 40;
+  RCC_OscInitStruct.PLL.PLLP            = 7;
+  RCC_OscInitStruct.PLL.PLLQ            = 8;
+  RCC_OscInitStruct.PLL.PLLR            = 8;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /* Enable MSI Auto-calibration through LSE */
+  HAL_RCCEx_EnableMSIPLLMode();
+
+  /* Select MSI output as USB clock source */
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_MSI;
+  HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
+
+  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 
+  clocks dividers */
+  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  
+#elif defined (USB_USE_HSE_CLOCK)
+  
+  /* Enable HSE Oscillator and activate PLL with HSE as source */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLN = 20;
+  RCC_OscInitStruct.PLL.PLLR = 2;
+  RCC_OscInitStruct.PLL.PLLP = 7;
+  RCC_OscInitStruct.PLL.PLLQ = 4;  
+  
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  
+  /* Select PLLSAI output as USB clock source */
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
+  PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLLSAI1;
+  PeriphClkInitStruct.PLLSAI1.PLLSAI1N = 24;
+  PeriphClkInitStruct.PLLSAI1.PLLSAI1Q = 4; 
+  PeriphClkInitStruct.PLLSAI1.PLLSAI1P = 1;
+  PeriphClkInitStruct.PLLSAI1.PLLSAI1M = 1;
+  PeriphClkInitStruct.PLLSAI1.PLLSAI1Source = RCC_PLLSOURCE_HSE;
+  PeriphClkInitStruct.PLLSAI1.PLLSAI1ClockOut= RCC_PLLSAI1_48M2CLK;
+  if(HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct)!= HAL_OK)
+  {
+    Error_Handler();
+  }
+  
+  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 
+  clocks dividers */
+  RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  
+#endif /* USB_USE_LSE_MSI_CLOCK */
+}
+
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @param  None
+  * @retval None
+  */
+static void Error_Handler(void)
+{
+  while (1)
+  {
   }
 }
 #endif

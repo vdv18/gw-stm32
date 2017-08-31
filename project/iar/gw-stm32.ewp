@@ -1937,9 +1937,6 @@
     <name>libraries</name>
     <group>
       <name>STM32_USB_Device_Library</name>
-      <excluded>
-        <configuration>Debug</configuration>
-      </excluded>
       <group>
         <name>Class</name>
         <group>
@@ -2009,6 +2006,9 @@
           <name>Src</name>
           <file>
             <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Src\usbd_conf_template.c</name>
+            <excluded>
+              <configuration>Debug</configuration>
+            </excluded>
           </file>
           <file>
             <name>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Src\usbd_core.c</name>
@@ -2610,9 +2610,6 @@
   </group>
   <group>
     <name>usb</name>
-    <excluded>
-      <configuration>Debug</configuration>
-    </excluded>
     <file>
       <name>$PROJ_DIR$\..\..\sources\usbd_conf.c</name>
     </file>

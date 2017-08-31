@@ -50,7 +50,7 @@
 #define __USBD_CONF_H
 
 /* Includes ------------------------------------------------------------------*/
-//#include "stm32l4xx_hal.h"
+#include "stm32l4xx_hal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

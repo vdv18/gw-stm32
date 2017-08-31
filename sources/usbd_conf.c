@@ -79,20 +79,20 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef *hpcd)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
-  //HAL_GPIO_Init(GPIOA, &GPIO_InitStruct); 
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct); 
   
   /* Configure VBUS Pin */
   GPIO_InitStruct.Pin = GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  //HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
   
   /* Configure ID pin */
   GPIO_InitStruct.Pin = GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
-  //HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
   
   /* Enable USB FS Clock */
   __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
@@ -463,7 +463,7 @@ uint32_t USBD_LL_GetRxDataSize(USBD_HandleTypeDef *pdev, uint8_t ep_addr)
   */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  if(GPIO_Pin == SD_DETECT_PIN)
+  //if(GPIO_Pin == SD_DETECT_PIN)
   {   
     /* Nothing to do */
   }
