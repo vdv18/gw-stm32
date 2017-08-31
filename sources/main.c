@@ -217,6 +217,7 @@ void uart_init()
 #endif
   
 }
+#ifdef _TEST_
 
 void main()
 {
@@ -303,3 +304,4 @@ void main()
       __WFE();
   }
 }
+#endif
