@@ -51,14 +51,14 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define STORAGE_LUN_NBR                  1  
-#define STORAGE_BLK_NBR                  0x10000  
-#define STORAGE_BLK_SIZ                  0x200
+#define FOPS_LUN_NBR                  1  
+#define FOPS_BLKNBR                  0x10000  
+#define FOPS_BLKSIZ                  0x200
 
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 /* USB Mass storage Standard Inquiry Data */
-int8_t STORAGE_Inquirydata[] = { /* 36 */
+int8_t fops_inquiry_data[] = { /* 36 */
   /* LUN 0 */
   0x00,		
   0x80,		
@@ -68,30 +68,30 @@ int8_t STORAGE_Inquirydata[] = { /* 36 */
   0x00,
   0x00,	
   0x00,
-  'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ', /* Manufacturer: 8 bytes  */
-  'P', 'r', 'o', 'd', 'u', 'c', 't', ' ', /* Product     : 16 Bytes */
-  ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+  'M', 'G', 'T', ' ', ' ', ' ', ' ', ' ', /* Manufacturer: 8 bytes  */
+  'B', 'L', 'E', ' ', 'G', 'a', 't', 'e', /* Product     : 16 Bytes */
+  'w', 'a', 'y', ' ', ' ', ' ', ' ', ' ',
   '0', '.', '0','1',                      /* Version     : 4 Bytes  */
 }; 
 
 /* Private function prototypes -----------------------------------------------*/
-int8_t STORAGE_Init(uint8_t lun);
-int8_t STORAGE_GetCapacity(uint8_t lun, uint32_t *block_num, uint16_t *block_size);
-int8_t STORAGE_IsReady(uint8_t lun);
-int8_t STORAGE_IsWriteProtected(uint8_t lun);
-int8_t STORAGE_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len);
-int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len);
-int8_t STORAGE_GetMaxLun(void);
+int8_t fops_init(uint8_t lun);
+int8_t fops_get_capacity(uint8_t lun, uint32_t *block_num, uint16_t *block_size);
+int8_t fops_is_ready(uint8_t lun);
+int8_t fops_is_write_protected(uint8_t lun);
+int8_t fops_read(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len);
+int8_t fops_write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len);
+int8_t fops_get_max_lun(void);
 
 USBD_StorageTypeDef USBD_DISK_fops = {
-  STORAGE_Init,
-  STORAGE_GetCapacity,
-  STORAGE_IsReady,
-  STORAGE_IsWriteProtected,
-  STORAGE_Read,
-  STORAGE_Write,
-  STORAGE_GetMaxLun,
-  STORAGE_Inquirydata, 
+  fops_init,
+  fops_get_capacity,
+  fops_is_ready,
+  fops_is_write_protected,
+  fops_read,
+  fops_write,
+  fops_get_max_lun,
+  fops_inquiry_data, 
 };
 /* Private functions ---------------------------------------------------------*/
 
@@ -100,11 +100,11 @@ USBD_StorageTypeDef USBD_DISK_fops = {
   * @param  lun: Logical unit number
   * @retval Status (0 : Ok / -1 : Error)
   */
-int8_t STORAGE_Init(uint8_t lun)
+int8_t fops_init(uint8_t lun)
 {
   int8_t ret = -1;  
 
-  if(MICRO_SD_Init() == MSD_OK)
+  if(microsd_init() == MSD_OK)
   {
     ret = 0;
   }
@@ -118,19 +118,16 @@ int8_t STORAGE_Init(uint8_t lun)
   * @param  block_size: Block size
   * @retval Status (0: Ok / -1: Error)
   */
-int8_t STORAGE_GetCapacity(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
+int8_t fops_get_capacity(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
-  MICRO_SD_CardInfo info;
+  micro_sd_card_info info;
   int8_t ret = -1;  
   
-  if(MICRO_SD_IsDetected() != SD_NOT_PRESENT)
-  {
-    MICRO_SD_GetCardInfo(&info);
-    
-    *block_num =  info.LogBlockNbr  - 1;
-    *block_size = info.LogBlockSize;
-    ret = 0;
-  }
+  microsd_get_card_info(&info);
+  
+  *block_num =  info.LogBlockNbr  - 1;
+  *block_size = info.LogBlockSize;
+  ret = 0;
   return ret;
 }
 
@@ -139,27 +136,12 @@ int8_t STORAGE_GetCapacity(uint8_t lun, uint32_t *block_num, uint16_t *block_siz
   * @param  lun: Logical unit number
   * @retval Status (0: Ok / -1: Error)
   */
-int8_t STORAGE_IsReady(uint8_t lun)
+int8_t fops_is_ready(uint8_t lun)
 {
-  static int8_t prev_status = 0;
   int8_t ret = -1;
-  ret = 0;
-  if(MICRO_SD_IsDetected() != SD_NOT_PRESENT)
+  if(microsd_get_card_state() == SD_TRANSFER_OK)
   {
-    if(prev_status < 0)
-    {
-      MICRO_SD_Init();
-      prev_status = 0;
-      
-    }
-    if(MICRO_SD_GetCardState() == SD_TRANSFER_OK)
-    {
-      ret = 0;
-    }
-  }
-  else if(prev_status == 0)
-  {
-    prev_status = -1;
+    ret = 0;
   }
   return ret;
 }
@@ -169,7 +151,7 @@ int8_t STORAGE_IsReady(uint8_t lun)
   * @param  lun: Logical unit number
   * @retval Status (0: write enabled / -1: otherwise)
   */
-int8_t STORAGE_IsWriteProtected(uint8_t lun)
+int8_t fops_is_write_protected(uint8_t lun)
 {
   return -1;
 }
@@ -181,13 +163,13 @@ int8_t STORAGE_IsWriteProtected(uint8_t lun)
   * @param  blk_len: Blocks number
   * @retval Status (0: Ok / -1: Error)
   */
-int8_t STORAGE_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
+int8_t fops_read(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   int8_t ret = -1;  
   uint32_t timeout = 100000;
   
-  MICRO_SD_ReadBlocks((uint32_t *)buf, blk_addr, blk_len, SD_DATATIMEOUT);
-  while(MICRO_SD_GetCardState() != SD_TRANSFER_OK)
+  microsd_read_blocks((uint32_t *)buf, blk_addr, blk_len, SD_DATATIMEOUT);
+  while(microsd_get_card_state() != SD_TRANSFER_OK)
   {
     if (timeout-- == 0)
     {
@@ -206,13 +188,13 @@ int8_t STORAGE_Read(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_l
   * @param  blk_len: Blocks number
   * @retval Status (0 : Ok / -1 : Error)
   */
-int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
+int8_t fops_write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   int8_t ret = -1;  
   uint32_t timeout = 100000;  
   
-  MICRO_SD_WriteBlocks((uint32_t *)buf, blk_addr, blk_len, SD_DATATIMEOUT);
-  while(MICRO_SD_GetCardState() != SD_TRANSFER_OK)
+  microsd_write_blocks((uint32_t *)buf, blk_addr, blk_len, SD_DATATIMEOUT);
+  while(microsd_get_card_state() != SD_TRANSFER_OK)
   {
     if (timeout-- == 0)
     {
@@ -231,9 +213,9 @@ int8_t STORAGE_Write(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_
   * @param  None
   * @retval Lun(s) number
   */
-int8_t STORAGE_GetMaxLun(void)
+int8_t fops_get_max_lun(void)
 {
-  return(STORAGE_LUN_NBR - 1);
+  return(FOPS_LUN_NBR - 1);
 }
  
 

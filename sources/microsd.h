@@ -4,32 +4,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l4xx_hal.h"
 
-/** @addtogroup BSP
-  * @{
-  */
+#define micro_sd_card_info HAL_SD_CardInfoTypeDef
 
-/** @addtogroup STM32L476G_EVAL
-  * @{
-  */
-
-/** @addtogroup STM32L476G_EVAL_SD
-  * @{
-  */
-
-/* Exported types ------------------------------------------------------------*/
-
-/** @defgroup STM32L476G_EVAL_SD_Exported_Types Exported Types
-  * @{
-  */
-
-/** 
-  * @brief SD Card information structure 
-  */
-#define MICRO_SD_CardInfo HAL_SD_CardInfoTypeDef
-/**
-  * @}
-  */
-   
 /** 
   * @brief  SD status structure definition  
   */     
@@ -78,20 +54,18 @@
 /** @defgroup STM32L476G_EVAL_SD_Exported_Functions Exported Functions
   * @{
   */
-uint8_t MICRO_SD_Init(void);
-uint8_t MICRO_SD_DeInit(void);
-uint8_t MICRO_SD_ITConfig(void);
-uint8_t MICRO_SD_ReadBlocks(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks, uint32_t Timeout);
-uint8_t MICRO_SD_WriteBlocks(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks, uint32_t Timeout);
-uint8_t MICRO_SD_ReadBlocks_DMA(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks);
-uint8_t MICRO_SD_WriteBlocks_DMA(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks);
-uint8_t MICRO_SD_Erase(uint32_t StartAddr, uint32_t EndAddr);
-void    MICRO_SD_IRQHandler(void);
-void    MICRO_SD_DMA_Tx_IRQHandler(void);
-void    MICRO_SD_DMA_Rx_IRQHandler(void);
-uint8_t MICRO_SD_GetCardState(void);
-void    MICRO_SD_GetCardInfo(MICRO_SD_CardInfo *CardInfo);
-uint8_t MICRO_SD_IsDetected(void);
+uint8_t microsd_init(void);
+uint8_t microsd_deinit(void);
+uint8_t microsd_read_blocks(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks, uint32_t Timeout);
+uint8_t microsd_write_blocks(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks, uint32_t Timeout);
+uint8_t microsd_read_blocks_dma(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks);
+uint8_t microsd_write_blocks_dma(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks);
+uint8_t microsd_erase(uint32_t StartAddr, uint32_t EndAddr);
+void    microsd_irq_handler(void);
+void    microsd_txdma_irq_handler(void);
+void    microsd_rxdma_irq_handler(void);
+uint8_t microsd_get_card_state(void);
+void    microsd_get_card_info(micro_sd_card_info *CardInfo);
 
 
 #endif//__MICROSD_H__

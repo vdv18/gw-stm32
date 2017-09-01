@@ -323,43 +323,16 @@ extern PCD_HandleTypeDef hpcd;
 void SysTick_Handler()
 {
   HAL_IncTick();
+  timer_tick_diff(1);
 }
 void OTG_FS_IRQHandler(void)
 {
   HAL_PCD_IRQHandler(&hpcd);
 }
 
-/**
-  * @brief  This function handles DMA2 Channel 4 interrupt request.
-  * @param  None
-  * @retval None
-  */
-//extern PCD_HandleTypeDef hpcd;
-//extern SD_HandleTypeDef uSdHandle;
-//void DMA2_Channel4_IRQHandler(void)
-//{
-//  if((uSdHandle.Context == (SD_CONTEXT_DMA | SD_CONTEXT_READ_SINGLE_BLOCK)) || 
-//     (uSdHandle.Context == (SD_CONTEXT_DMA | SD_CONTEXT_READ_MULTIPLE_BLOCK)))
-//  {
-//    BSP_SD_DMA_Rx_IRQHandler();
-//  }
-//  else if((uSdHandle.Context == (SD_CONTEXT_DMA | SD_CONTEXT_WRITE_SINGLE_BLOCK)) || 
-//          (uSdHandle.Context == (SD_CONTEXT_DMA | SD_CONTEXT_WRITE_MULTIPLE_BLOCK)))
-//  {
-//    BSP_SD_DMA_Tx_IRQHandler();
-//  }    
-//}
-///**
-//  * @brief  This function handles SDMMC1 interrupt request.
-//  * @param  None
-//  * @retval None
-//  */
-//void SDMMC1_IRQHandler(void)
-//{
-//  BSP_SD_IRQHandler();
-//}
 int main()
 {
+  timer_init();
   HAL_Init();
   SystemClock_Config();
   __HAL_RCC_PWR_CLK_ENABLE();
@@ -377,9 +350,9 @@ int main()
     /* Start Device Process */
   USBD_Start(&USBD_Device);
   
-  
   while(1)
   {
+    timer_handle();
   }
 }
 

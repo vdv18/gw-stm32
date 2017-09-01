@@ -29,7 +29,7 @@ HAL_StatusTypeDef SD_DMAConfigTx(SD_HandleTypeDef *hsd);
   * @param  None
   * @retval SD status
   */
-uint8_t MICRO_SD_Init(void)
+uint8_t microsd_init(void)
 { 
   uint8_t sd_state = MSD_OK;
   
@@ -73,7 +73,7 @@ uint8_t MICRO_SD_Init(void)
   * @param  None 
   * @retval SD status
   */
-uint8_t MICRO_SD_DeInit(void)
+uint8_t microsd_deinit(void)
 { 
   uint8_t sd_state = MSD_OK;
   
@@ -92,18 +92,6 @@ uint8_t MICRO_SD_DeInit(void)
 
 
 /**
- * @brief  Detects if SD card is correctly plugged in the memory slot or not.
- * @param  None
- * @retval Returns if SD is detected or not
- */
-uint8_t MICRO_SD_IsDetected(void)
-{
-  __IO uint8_t status = SD_PRESENT;
-
-  return status;
-}
-
-/**
   * @brief  Reads block(s) from a specified address in an SD card, in polling mode.
   * @param  pData: Pointer to the buffer that will contain the data to transmit
   * @param  ReadAddr: Address from where data is to be read  
@@ -111,7 +99,7 @@ uint8_t MICRO_SD_IsDetected(void)
   * @param  Timeout: Timeout for read operation
   * @retval SD status
   */
-uint8_t MICRO_SD_ReadBlocks(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks, uint32_t Timeout)
+uint8_t microsd_read_blocks(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks, uint32_t Timeout)
 {
   HAL_StatusTypeDef  sd_state = HAL_OK;
 
@@ -135,7 +123,7 @@ uint8_t MICRO_SD_ReadBlocks(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBl
   * @param  Timeout: Timeout for write operation
   * @retval SD status
   */
-uint8_t MICRO_SD_WriteBlocks(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks, uint32_t Timeout)
+uint8_t microsd_write_blocks(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks, uint32_t Timeout)
 {
   HAL_StatusTypeDef  sd_state = HAL_OK;
 
@@ -158,7 +146,7 @@ uint8_t MICRO_SD_WriteBlocks(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOf
   * @param  NumOfBlocks: Number of SD blocks to read 
   * @retval SD status
   */
-uint8_t MICRO_SD_ReadBlocks_DMA(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks)
+uint8_t microsd_read_blocks_dma(uint32_t *pData, uint32_t ReadAddr, uint32_t NumOfBlocks)
 {
   HAL_StatusTypeDef  sd_state = HAL_OK;
   
@@ -191,7 +179,7 @@ uint8_t MICRO_SD_ReadBlocks_DMA(uint32_t *pData, uint32_t ReadAddr, uint32_t Num
   * @param  NumOfBlocks: Number of SD blocks to write 
   * @retval SD status
   */
-uint8_t MICRO_SD_WriteBlocks_DMA(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks)
+uint8_t microsd_write_blocks_dma(uint32_t *pData, uint32_t WriteAddr, uint32_t NumOfBlocks)
 {
   HAL_StatusTypeDef  sd_state = HAL_OK;
   
@@ -223,7 +211,7 @@ uint8_t MICRO_SD_WriteBlocks_DMA(uint32_t *pData, uint32_t WriteAddr, uint32_t N
   * @param  EndAddr: End byte address
   * @retval SD status
   */
-uint8_t MICRO_SD_Erase(uint32_t StartAddr, uint32_t EndAddr)
+uint8_t microsd_erase(uint32_t StartAddr, uint32_t EndAddr)
 {
   HAL_StatusTypeDef  sd_state = HAL_OK;
 
@@ -243,7 +231,7 @@ uint8_t MICRO_SD_Erase(uint32_t StartAddr, uint32_t EndAddr)
   * @brief  Handles SD card interrupt request.
   * @retval None
   */
-void MICRO_SD_IRQHandler(void)
+void microsd_irq_handler(void)
 {
   HAL_SD_IRQHandler(&uSdHandle);
 }
@@ -252,7 +240,7 @@ void MICRO_SD_IRQHandler(void)
   * @brief  Handles SD DMA Tx transfer interrupt request.
   * @retval None
   */
-void MICRO_SD_DMA_Tx_IRQHandler(void)
+void microsd_txdma_irq_handler(void)
 {
   HAL_DMA_IRQHandler(uSdHandle.hdmatx); 
 }
@@ -261,7 +249,7 @@ void MICRO_SD_DMA_Tx_IRQHandler(void)
   * @brief  Handles SD DMA Rx transfer interrupt request.
   * @retval None
   */
-void MICRO_SD_DMA_Rx_IRQHandler(void)
+void microsd_rxdma_irq_handler(void)
 {
   HAL_DMA_IRQHandler(uSdHandle.hdmarx);
 }
@@ -271,7 +259,7 @@ void MICRO_SD_DMA_Rx_IRQHandler(void)
   * @param  None
   * @retval Data transfer state.
   */
-uint8_t MICRO_SD_GetCardState(void)
+uint8_t microsd_get_card_state(void)
 {
   HAL_SD_CardStateTypedef card_state;
   card_state = HAL_SD_GetCardState(&uSdHandle);
@@ -297,7 +285,7 @@ uint8_t MICRO_SD_GetCardState(void)
   * @param  CardInfo: Pointer to HAL_SD_CardInfoTypedef structure
   * @retval None 
   */
-void MICRO_SD_GetCardInfo(MICRO_SD_CardInfo *CardInfo)
+void microsd_get_card_info(micro_sd_card_info *CardInfo)
 {
   /* Get SD card Information */
   HAL_SD_GetCardInfo(&uSdHandle, CardInfo);

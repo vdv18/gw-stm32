@@ -55,8 +55,8 @@
 #define USBD_VID                      0x0483
 #define USBD_PID                      0x5720
 #define USBD_LANGID_STRING            0x409
-#define USBD_MANUFACTURER_STRING      "STMicroelectronics"
-#define USBD_PRODUCT_FS_STRING        "Mass Storage in FS Mode"
+#define USBD_MANUFACTURER_STRING      "MGTcontrol"
+#define USBD_PRODUCT_FS_STRING        "Mass Storage device"
 #define USBD_CONFIGURATION_FS_STRING  "MSC Config"
 #define USBD_INTERFACE_FS_STRING      "MSC Interface"
 
