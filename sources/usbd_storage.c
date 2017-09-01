@@ -120,7 +120,7 @@ int8_t fops_init(uint8_t lun)
   */
 int8_t fops_get_capacity(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
-  micro_sd_card_info info;
+  microsd_card_info_t info;
   int8_t ret = -1;  
   
   microsd_get_card_info(&info);
@@ -153,7 +153,7 @@ int8_t fops_is_ready(uint8_t lun)
   */
 int8_t fops_is_write_protected(uint8_t lun)
 {
-  return -1;
+  return 0;
 }
 
 /**

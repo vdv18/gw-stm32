@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "ff.h"
 
 #ifdef DEBUG
 #include <stdlib.h>
@@ -309,6 +310,7 @@ void main()
   }
 }
 #else
+
 #include "usbd_core.h"
 #include "usbd_desc.h"
 #include "usbd_msc.h"
@@ -325,9 +327,37 @@ void SysTick_Handler()
   HAL_IncTick();
   timer_tick_diff(1);
 }
+
 void OTG_FS_IRQHandler(void)
 {
   HAL_PCD_IRQHandler(&hpcd);
+}
+
+FATFS SDFatFs;  /* File system object for SD card logical drive */
+FIL MyFile;     /* File object */
+char SDPath[4]; /* SD card logical drive path */
+static uint8_t rtext[100];    
+static void timer_cb1(timer_t id)
+{
+  if(id == timer_5s)
+  {
+    if(f_mount(&SDFatFs, "1:/", 0) == FR_OK)
+    {
+      if(f_open(&MyFile, "1:/STM32.TXT", FA_READ) == FR_OK)
+      {
+        FRESULT res;
+        uint32_t bytesread; 
+        memset(rtext,0,sizeof(rtext));
+        res = f_read(&MyFile, rtext, sizeof(rtext), (UINT*)&bytesread);
+        if((bytesread != 0) && (res == FR_OK))
+        {
+          printf("%s\r\n",rtext);
+        }
+        f_close(&MyFile);
+      }
+    }
+    
+  }
 }
 
 int main()
@@ -349,7 +379,8 @@ int main()
   
     /* Start Device Process */
   USBD_Start(&USBD_Device);
-  
+  timer_5s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(5), timer_cb1);
+
   while(1)
   {
     timer_handle();

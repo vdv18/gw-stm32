@@ -31,8 +31,12 @@ HAL_StatusTypeDef SD_DMAConfigTx(SD_HandleTypeDef *hsd);
   */
 uint8_t microsd_init(void)
 { 
+  static uint8_t sd_state_old = MSD_ERROR;
   uint8_t sd_state = MSD_OK;
-  
+  if(sd_state_old == MSD_OK)
+  {
+    return MSD_OK;
+  }
   /* uSD device interface configuration */
   uSdHandle.Instance = SDMMC1;
   uSdHandle.Init.ClockEdge           = SDMMC_CLOCK_EDGE_RISING;
@@ -285,7 +289,7 @@ uint8_t microsd_get_card_state(void)
   * @param  CardInfo: Pointer to HAL_SD_CardInfoTypedef structure
   * @retval None 
   */
-void microsd_get_card_info(micro_sd_card_info *CardInfo)
+void microsd_get_card_info(microsd_card_info_t *CardInfo)
 {
   /* Get SD card Information */
   HAL_SD_GetCardInfo(&uSdHandle, CardInfo);
@@ -334,7 +338,6 @@ static void SD_MspInit(void)
   /* Enable GPIOs clock */
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
-  __SD_DETECT_GPIO_CLK_ENABLE();
   
   /* Common GPIO configuration */
   gpioinitstruct.Mode      = GPIO_MODE_AF_PP;
@@ -351,12 +354,6 @@ static void SD_MspInit(void)
   gpioinitstruct.Pin = GPIO_PIN_2;
   HAL_GPIO_Init(GPIOD, &gpioinitstruct);
 
-  /* SD Card detect pin configuration */
-  gpioinitstruct.Mode      = GPIO_MODE_INPUT;
-  gpioinitstruct.Pull      = GPIO_PULLUP;
-  gpioinitstruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
-  gpioinitstruct.Pin       = SD_DETECT_PIN;
-  HAL_GPIO_Init(SD_DETECT_GPIO_PORT, &gpioinitstruct);
     
   /* NVIC configuration for SDMMC1 interrupts */
   HAL_NVIC_SetPriority(SDMMC1_IRQn, 5, 0);
@@ -375,13 +372,11 @@ static void SD_MspDeInit(void)
 
   /* Disable all interrupts */
   HAL_NVIC_DisableIRQ(SDMMC1_IRQn);
-  HAL_NVIC_DisableIRQ(SD_DETECT_IRQn);
   HAL_NVIC_DisableIRQ(DMA2_Channel4_IRQn);
   
   /* De-initialize all pins */
   HAL_GPIO_DeInit(GPIOC, (GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12));
   HAL_GPIO_DeInit(GPIOD, GPIO_PIN_2);
-  HAL_GPIO_DeInit(SD_DETECT_GPIO_PORT, SD_DETECT_PIN);
   
   /* De-initialize DMA channel */
   hdma.Instance = DMA2_Channel4;

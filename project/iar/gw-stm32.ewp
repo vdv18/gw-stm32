@@ -77,7 +77,7 @@
         </option>
         <option>
           <name>OGLastSavedByProductVersion</name>
-          <state>7.80.2.11970</state>
+          <state>7.80.4.12487</state>
         </option>
         <option>
           <name>GeneralEnableMisra</name>
@@ -316,6 +316,7 @@
           <state>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Core\Inc</state>
           <state>$PROJ_DIR$\..\..\libraries\STM32_USB_Device_Library\Class\MSC\Inc</state>
           <state>$PROJ_DIR$\..\..\libraries\STM32L4xx_HAL_Driver\Inc</state>
+          <state>$PROJ_DIR$\..\..\utilities\ff13\source</state>
         </option>
         <option>
           <name>CCStdIncCheck</name>
@@ -2635,6 +2636,45 @@
       <name>$PROJ_DIR$\..\..\sources\usbd_storage.h</name>
     </file>
   </group>
+  <group>
+    <name>utilities</name>
+    <group>
+      <name>ff3</name>
+      <group>
+        <name>source</name>
+        <file>
+          <name>$PROJ_DIR$\..\..\utilities\ff13\source\diskio.c</name>
+          <excluded>
+            <configuration>Debug</configuration>
+          </excluded>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\..\..\utilities\ff13\source\diskio.h</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\..\..\utilities\ff13\source\ff.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\..\..\utilities\ff13\source\ff.h</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\..\..\utilities\ff13\source\ffconf.h</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\..\..\utilities\ff13\source\ffsystem.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\..\..\utilities\ff13\source\ffunicode.c</name>
+        </file>
+        <file>
+          <name>$PROJ_DIR$\..\..\utilities\ff13\source\integer.h</name>
+        </file>
+      </group>
+    </group>
+  </group>
+  <file>
+    <name>$PROJ_DIR$\..\..\sources\diskio.c</name>
+  </file>
   <file>
     <name>$PROJ_DIR$\..\..\sources\list.c</name>
   </file>

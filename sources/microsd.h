@@ -4,7 +4,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32l4xx_hal.h"
 
-#define micro_sd_card_info HAL_SD_CardInfoTypeDef
+#define microsd_card_info_t HAL_SD_CardInfoTypeDef
 
 /** 
   * @brief  SD status structure definition  
@@ -22,15 +22,6 @@
 
 /* Exported constants --------------------------------------------------------*/  
 
-/** @defgroup STM32L476G_EVAL_SD_Exported_Constants  Exported Constants
-  * @{
-  */ 
-#define SD_DETECT_PIN                    GPIO_PIN_8
-#define SD_DETECT_GPIO_PORT              GPIOA
-#define __SD_DETECT_GPIO_CLK_ENABLE()    __HAL_RCC_GPIOA_CLK_ENABLE()
-#define SD_DETECT_IRQn                   EXTI9_5_IRQn
-#define SD_Detect_IRQHandler             EXTI9_5_IRQHandler
-   
 #define SD_DATATIMEOUT           ((uint32_t)100000000)
     
 #define SD_PRESENT               ((uint8_t)0x01)
@@ -65,7 +56,7 @@ void    microsd_irq_handler(void);
 void    microsd_txdma_irq_handler(void);
 void    microsd_rxdma_irq_handler(void);
 uint8_t microsd_get_card_state(void);
-void    microsd_get_card_info(micro_sd_card_info *CardInfo);
+void    microsd_get_card_info(microsd_card_info_t *CardInfo);
 
 
 #endif//__MICROSD_H__
