@@ -44,9 +44,6 @@ uint8_t MICRO_SD_Init(void)
   
   /* Msp SD initialization */
   SD_MspInit();
-    
-  /* Initialize IO functionalities used by SD detect pin */
-  MICRO_SD_ITConfig(); 
 
   /* HAL SD initialization */
   if(HAL_SD_Init(&uSdHandle) != HAL_OK)
@@ -93,28 +90,6 @@ uint8_t MICRO_SD_DeInit(void)
   return  sd_state;
 }
 
-/**
-  * @brief  Configures Interrupt mode for SD detection pin.
-  * @param  None
-  * @retval Returns 0
-  */
-uint8_t MICRO_SD_ITConfig(void)
-{ 
-  GPIO_InitTypeDef gpioinitstruct = {0};
-  
-  /* Configure Interrupt mode for SD detection pin */ 
-  gpioinitstruct.Mode      = GPIO_MODE_IT_RISING_FALLING;
-  gpioinitstruct.Pull      = GPIO_PULLUP;
-  gpioinitstruct.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
-  gpioinitstruct.Pin       = SD_DETECT_PIN;
-  HAL_GPIO_Init(SD_DETECT_GPIO_PORT, &gpioinitstruct);
-    
-  /* NVIC configuration for SD detection interrupts */
-  HAL_NVIC_SetPriority(SD_DETECT_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(SD_DETECT_IRQn);
-  
-  return 0;
-}
 
 /**
  * @brief  Detects if SD card is correctly plugged in the memory slot or not.
@@ -125,12 +100,6 @@ uint8_t MICRO_SD_IsDetected(void)
 {
   __IO uint8_t status = SD_PRESENT;
 
-  /* Check SD card detect pin */
-  if(HAL_GPIO_ReadPin(SD_DETECT_GPIO_PORT, SD_DETECT_PIN) != GPIO_PIN_RESET) 
-  {
-    //status = SD_NOT_PRESENT;
-  }
-  
   return status;
 }
 
