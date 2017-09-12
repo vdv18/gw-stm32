@@ -326,6 +326,7 @@ void SysTick_Handler()
 {
   HAL_IncTick();
   timer_tick_diff(1);
+  HAL_SYSTICK_IRQHandler();
 }
 
 void OTG_FS_IRQHandler(void)
@@ -360,6 +361,97 @@ static void timer_cb1(timer_t id)
   }
 }
 
+static SPI_HandleTypeDef spi = { .Instance = SPI1 };
+int spi_init(void)
+{
+  __GPIOA_CLK_ENABLE();
+  __GPIOB_CLK_ENABLE();
+  __SPI1_CLK_ENABLE();
+  spi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+  spi.Init.Direction = SPI_DIRECTION_2LINES;
+  spi.Init.CLKPhase = 0;//SPI_CR1_CPHA;
+  spi.Init.CLKPolarity = 0;//SPI_CR1_CPOL;
+  spi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLED;
+  spi.Init.DataSize = SPI_DATASIZE_8BIT;
+  spi.Init.FirstBit = SPI_FIRSTBIT_LSB;
+  spi.Init.NSS = SPI_NSS_SOFT;
+  spi.Init.TIMode = SPI_TIMODE_ENABLED;//SPI_TIMODE_DISABLED;
+  spi.Init.Mode = SPI_MODE_MASTER; 
+  if (HAL_SPI_Init(&spi) != HAL_OK)
+  {
+    asm("bkpt 255");
+  }
+  GPIO_InitTypeDef GPIO_InitStruct;
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  //GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
+
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct); 
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct); 
+  
+  
+//  GPIO_InitStruct.Pin = GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_4 | GPIO_PIN_6 | GPIO_PIN_4 | GPIO_PIN_7;
+//  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+//  GPIO_InitStruct.Pull = GPIO_NOPULL;
+//  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct); 
+
+  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+}
+timer_t timer_spi;
+static void timer_cb2(timer_t id)
+{
+  static uint8_t temp_out[2] = {0x12,0x34};
+  static uint8_t temp_in[2] = {0xff,0xff};
+  if(id == timer_5s)
+  {
+    timer_start(timer_spi);
+  }
+  if(id == timer_spi)
+  {
+    static int fsm = 0;
+    switch(fsm++){
+      case 0:
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+        break;
+      case 1:
+        HAL_SPI_TransmitReceive(&spi, (uint8_t *)&temp_out, (uint8_t*)&temp_in, sizeof(temp_out), 100);
+        break;
+      case 2:
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+        break;
+      default:
+        timer_stop(timer_spi);
+        fsm = 0;
+        break;
+    };
+  }
+}
+
 int main()
 {
   timer_init();
@@ -379,8 +471,10 @@ int main()
   
     /* Start Device Process */
   USBD_Start(&USBD_Device);
-  timer_5s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(5), timer_cb1);
-
+  timer_5s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb2);
+  timer_spi = timer_create(TIMER_REPEAT, TIMER_MILLISECOND(10), timer_cb2);
+  spi_init();
+  
   while(1)
   {
     timer_handle();
