@@ -366,16 +366,17 @@ int spi_init(void)
 {
   __GPIOA_CLK_ENABLE();
   __GPIOB_CLK_ENABLE();
+  __GPIOC_CLK_ENABLE();
   __SPI1_CLK_ENABLE();
-  spi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+  spi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   spi.Init.Direction = SPI_DIRECTION_2LINES;
-  spi.Init.CLKPhase = 0;//SPI_CR1_CPHA;
-  spi.Init.CLKPolarity = 0;//SPI_CR1_CPOL;
+  spi.Init.CLKPhase = SPI_CR1_CPHA;
+  spi.Init.CLKPolarity = SPI_CR1_CPOL;
   spi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLED;
   spi.Init.DataSize = SPI_DATASIZE_8BIT;
   spi.Init.FirstBit = SPI_FIRSTBIT_LSB;
   spi.Init.NSS = SPI_NSS_SOFT;
-  spi.Init.TIMode = SPI_TIMODE_ENABLED;//SPI_TIMODE_DISABLED;
+  spi.Init.TIMode = SPI_TIMODE_DISABLED;
   spi.Init.Mode = SPI_MODE_MASTER; 
   if (HAL_SPI_Init(&spi) != HAL_OK)
   {
@@ -415,6 +416,12 @@ int spi_init(void)
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct); 
   
   
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct); 
+  GPIO_InitStruct.Pin = GPIO_PIN_14;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct); 
+  
+  
 //  GPIO_InitStruct.Pin = GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_4 | GPIO_PIN_6 | GPIO_PIN_4 | GPIO_PIN_7;
 //  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 //  GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -425,8 +432,8 @@ int spi_init(void)
 timer_t timer_spi;
 static void timer_cb2(timer_t id)
 {
-  static uint8_t temp_out[2] = {0x12,0x34};
-  static uint8_t temp_in[2] = {0xff,0xff};
+  static uint8_t temp_out[4] = {0x11,0x22,0x33,0x44};
+  static uint8_t temp_in[4] = {0xff,0xff,0x56,0x78};
   if(id == timer_5s)
   {
     timer_start(timer_spi);
@@ -445,6 +452,22 @@ static void timer_cb2(timer_t id)
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
         break;
       default:
+        if(temp_in[0] == 0x01)
+        {
+          HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET);
+        } else
+        if(temp_in[0] == 0x02)
+        {
+          HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET);
+        } else
+        if(temp_in[0] == 0x03)
+        {
+          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+        } else
+        if(temp_in[0] == 0x04)
+        {
+          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+        }
         timer_stop(timer_spi);
         fsm = 0;
         break;
