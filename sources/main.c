@@ -432,11 +432,11 @@ int spi_init(void)
 timer_t timer_spi;
 static void timer_cb2(timer_t id)
 {
-  static uint8_t temp_out[4] = {0x11,0x22,0x33,0x44};
-  static uint8_t temp_in[4] = {0xff,0xff,0x56,0x78};
+  static uint8_t temp_out[0x80] = {0x11,0x22,0x33,0x44};
+  static uint8_t temp_in[0x80] = {0xff,0xff,0x56,0x78};
   if(id == timer_5s)
   {
-    timer_start(timer_spi);
+    //timer_start(timer_spi);
   }
   if(id == timer_spi)
   {
@@ -468,7 +468,8 @@ static void timer_cb2(timer_t id)
         {
           HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
         }
-        timer_stop(timer_spi);
+        //timer_start(timer_spi);
+        //timer_stop(timer_spi);
         fsm = 0;
         break;
     };
@@ -496,6 +497,7 @@ int main()
   USBD_Start(&USBD_Device);
   timer_5s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb2);
   timer_spi = timer_create(TIMER_REPEAT, TIMER_MILLISECOND(10), timer_cb2);
+  timer_start(timer_spi);
   spi_init();
   
   while(1)
