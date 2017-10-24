@@ -16,7 +16,7 @@ static list_head_t message_out;
 
 
 #define USE_LPUART1
-
+//#define _TEST_
 #ifdef _TEST_
 void SysTick_Handler()
 {
@@ -28,6 +28,7 @@ void SysTick_Handler()
 static timer_t timer_1s = 0;
 static timer_t timer_2s = 0;
 static timer_t timer_5s = 0;
+static timer_t timer_30s = 0;
 void send();
 static char txbuffer[0x256];
 volatile int txlen = 0;
@@ -87,18 +88,24 @@ void timer_cb(timer_t id)
 volatile int temp = 0;
 volatile int sleep = 0;
 #define RTC_WKUP_EXTI (1<<20)
+
+char put_rs_char(char ch);
 void RTC_WKUP_IRQHandler()
 {
+  static char ch = 0;
   if (RTC->ISR & RTC_ISR_WUTF) {
     //sleep = ~sleep;
-    timer_tick_diff(1000);
+    //timer_tick_diff(1000);
     SCB->SCR &= ~SCB_SCR_SLEEPONEXIT_Msk;
     PWR->CR1  |= PWR_CR1_DBP; // Access to RTC, RTC Backup and RCC CSR registers enabled
     RTC->ISR &= ~RTC_ISR_WUTF; // Clear the RTC wake-up timer flag
     PWR->CR1  &= ~PWR_CR1_DBP; // Access to RTC, RTC Backup and RCC CSR registers disabled
     EXTI->PR1 |=  RTC_WKUP_EXTI;
+    put_rs_char('0'+ch++);
+    if(ch>9)ch=0;
   }
 }
+static uint8_t modem_work = 0;
 static uint8_t rx_buffer[0x1000];
 static uint8_t *prx_buffer;
 static uint8_t buffer_len = 0;
@@ -119,7 +126,8 @@ void LPUART1_IRQHandler(void)
     
     if(strstr(rx_buffer,"\r\nOK\r\n") != NULL)
     {
-      timer_stop(timer_5s);
+      modem_work = 1;
+      //timer_stop(timer_5s);
     }
 #ifdef DEBUG
     item = malloc(sizeof(item));
@@ -164,6 +172,26 @@ void USART3_IRQHandler(void)
   //USART3->ICR |= 1<<1;
 }
 #endif
+
+static uint8_t uart4_test[10] = 0;
+void UART4_IRQHandler(void)
+{
+  static uint8_t *p = uart4_test;
+  if(UART4->ISR & USART_ISR_RXNE)
+  {
+    if((p >= &uart4_test[10]) || (p < &uart4_test[0])) p = &uart4_test[0];
+    *p++ = UART4->RDR;
+  }
+  if(UART4->ISR & USART_ISR_IDLE)
+  {
+    UART4->ICR |= 1<<4;
+  }
+}
+char put_rs_char(char ch){
+  while ((UART4->ISR & USART_ISR_TXE) == 0){}
+  UART4->TDR = (ch);
+  return (ch);
+}
 char put_char(char ch){
 
 #ifdef USE_LPUART1
@@ -185,12 +213,76 @@ char put_char(char ch){
 }
 void send()
 {
+  static int first = 1;
   LPUART1->CR1 |= USART_CR1_UE;
   USART3->CR1 |= USART_CR1_UE;
-  put_char('A');
-  put_char('T');
-  put_char('\r');
-  put_char('\n');
+  switch(first++)
+  {
+  case 0:
+    put_char('A');
+    put_char('T');
+    put_char('+');
+    put_char('C');
+    put_char('L');
+    put_char('T');
+    put_char('S');
+    put_char('=');
+    put_char('1');
+    put_char('\r');
+    put_char('\n');
+    break;
+  case 1:
+    if(!modem_work)
+      first = 0;
+    put_char('A');
+    put_char('T');
+    put_char('+');
+    put_char('C');
+    put_char('C');
+    put_char('L');
+    put_char('K');
+    put_char('?');
+    put_char('\r');
+    put_char('\n');
+    break;
+  case 2:
+    put_char('A');
+    put_char('T');
+    put_char('+');
+    put_char('S');
+    put_char('M');
+    put_char('T');
+    put_char('P');
+    put_char('F');
+    put_char('I');
+    put_char('L');
+    put_char('E');
+    put_char('=');
+    put_char('?');
+    put_char('\r');
+    put_char('\n');
+
+    break;
+  case 3:
+    first = 1;
+    put_char('A');
+    put_char('T');
+    put_char('+');
+    put_char('S');
+    put_char('M');
+    put_char('T');
+    put_char('P');
+    put_char('F');
+    put_char('T');
+    put_char('=');
+    put_char('?');
+    put_char('\r');
+    put_char('\n');
+    first = 4;
+    break;
+  case 4:
+    break;
+  }
 }
 
 void uart_init()
@@ -199,7 +291,11 @@ void uart_init()
   RCC->APB1ENR1 |= RCC_APB1ENR1_USART3EN;
   prx_buffer = rx_buffer;
   RCC->CCIPR = 0x00;//(0x03<<10);
+#ifdef _TEST_
   RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_0;
+#else
+  RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_0;
+#endif
   //RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_0 | RCC_CCIPR_LPUART1SEL_1;
   GPIOB->MODER &=~( GPIO_MODER_MODE10 | GPIO_MODER_MODE11);
   GPIOB->MODER |= GPIO_MODER_MODE10_1 | GPIO_MODER_MODE11_1;
@@ -209,7 +305,11 @@ void uart_init()
   GPIOB->AFR[1] |= (GPIO_AFRL_AFSEL2_3 | GPIO_AFRL_AFSEL3_3);
   
   LPUART1->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_RXNEIE | USART_CR1_IDLEIE;
+#ifdef _TEST_
   LPUART1->BRR = 256*4000000/57600;////256*4000000UL/9600UL;//4000000/115200;//
+#else
+  LPUART1->BRR = 0x56CE3>>1;//256*80000000UL/57600;////256*4000000UL/9600UL;//4000000/115200;//
+#endif
   //LPUART1->CR2 = USART_CR2_SWAP;
   //LPUART1->CR3 |= USART_CR3_CTSE | USART_CR3_RTSE;
 #else
@@ -217,17 +317,76 @@ void uart_init()
   GPIOB->AFR[1] |= (GPIO_AFRL_AFSEL2 & ~(GPIO_AFRL_AFSEL2_3)) | (GPIO_AFRL_AFSEL3 & ~(GPIO_AFRL_AFSEL3_3));
   
   USART3->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_RXNEIE | USART_CR1_IDLEIE;
+#ifdef _TEST_
   USART3->BRR = 0x1A1;
+#else
+  USART3->BRR = 8333;
+#endif
   
 #endif
   
+}
+void sleep_deep()
+{
+  //
+  RCC->APB1RSTR2 |= RCC_AHB2ENR_GPIOCEN | RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN  | RCC_AHB2ENR_GPIOEEN | RCC_AHB2ENR_GPIOGEN;
+  {volatile uint32_t tr=9999999;while(tr){tr--;};}
+  GPIOA->MODER &=~( GPIO_MODER_MODE2 );
+  GPIOA->PUPDR &=~( GPIO_PUPDR_PUPD2 );
+  GPIOA->PUPDR |= ( GPIO_PUPDR_PUPD2_1 );
+  
+  EXTI->PR1    =  (1<<2); // Clear IT pending bit
+  EXTI->IMR1  |=  (1<<2); // Enable interrupt request from EXTI line
+  EXTI->EMR1  &= ~(1<<2); // Disable event on EXTI line
+  EXTI->RTSR1 |=  (1<<2); // Trigger rising edge enabled
+  EXTI->FTSR1 &= ~(1<<2); // Trigger falling edge disabled
+  
+  PWR->CR3 |= PWR_CR3_EWUP4;// | PWR_CR3_EWUP | PWR_CR3_APC | PWR_CR3_EIWF;
+  
+  /* Set Shutdown mode */
+  PWR->CR1 |= PWR_CR1_LPMS_SHUTDOWN;
+  
+  /* Set SLEEPDEEP bit of Cortex System Control Register */
+  SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
+
+  /* Request Wait For Interrupt */
+  __WFE();
+  __WFE();
+}
+void uart_rs_init()
+{  
+  RCC->APB1ENR1 |= RCC_APB1ENR1_UART4EN;
+  //GPIOA->ODR |= 0<<8;
+  GPIOA->MODER &=~( GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE6 | GPIO_MODER_MODE8);
+  GPIOA->MODER |= GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1 | GPIO_MODER_MODE6_0;
+  GPIOB->MODER &=~( GPIO_MODER_MODE14 );
+  
+  GPIOB->MODER &=~( GPIO_MODER_MODE14 );
+  GPIOB->MODER |= GPIO_MODER_MODE14_0;
+  GPIOB->ODR |= 1<<14;
+  
+  GPIOA->AFR[0] &= ~(GPIO_AFRL_AFSEL0 | GPIO_AFRL_AFSEL1);
+  GPIOA->AFR[0] |= (GPIO_AFRL_AFSEL0_3) | (GPIO_AFRL_AFSEL1_3);
+  
+  UART4->CR1 = USART_CR1_TE | USART_CR1_RE | USART_CR1_RXNEIE | USART_CR1_IDLEIE;
+#ifdef _TEST_
+  UART4->BRR = 0x1A1;  
+#else
+  UART4->BRR = 8333; 
+#endif
+  UART4->CR1 |= USART_CR1_UE;
 }
 #ifdef _TEST_
 
 void main()
 {
+  volatile int temp = 9999;
   //while(1);
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN | RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN  | RCC_AHB2ENR_GPIOEEN | RCC_AHB2ENR_GPIOGEN;
+  GPIOA->MODER &=~( GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE6 | GPIO_MODER_MODE8);
+  GPIOA->MODER |= GPIO_MODER_MODE8_0;
+  while(temp>0){temp--;};
+  GPIOA->ODR &=~(1<<8);
   timer_init(); 
   RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
   PWR->CR1 |= PWR_CR1_DBP;
@@ -267,6 +426,7 @@ void main()
   RTC->CR &=~RTC_CR_WUTE;
   RTC->CR = 0;
   NVIC_EnableIRQ(LPUART1_IRQn);
+  NVIC_EnableIRQ(UART4_IRQn);
   NVIC_EnableIRQ(RTC_WKUP_IRQn);
   RTC->CR |= RTC_CR_WUTIE;
   RTC->CR |= RTC_CR_WUTE;
@@ -281,9 +441,10 @@ void main()
   GPIOC->ODR |= GPIO_ODR_OD5;
   
   uart_init();
-  //SysTick->LOAD = 4000000 / 1000 - 1; // 1 ms
-  //SysTick->VAL = 0;
-  //SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+  uart_rs_init();
+  SysTick->LOAD = SystemCoreClock / 1000 - 1; // 1 ms
+  SysTick->VAL = 0;
+  SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
   timer_5s = timer_create(TIMER_REPEAT, TIMER_SECOND(2), timer_cb);
   timer_1s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb);
   timer_2s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(2), timer_cb);
@@ -325,7 +486,7 @@ extern PCD_HandleTypeDef hpcd;
 void SysTick_Handler()
 {
   HAL_IncTick();
-  timer_tick_diff(1);
+  timer_tick();
   HAL_SYSTICK_IRQHandler();
 }
 
@@ -383,6 +544,28 @@ int spi_init(void)
     asm("bkpt 255");
   }
   GPIO_InitTypeDef GPIO_InitStruct;
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  
+  GPIO_InitStruct.Pin = GPIO_PIN_8 | GPIO_PIN_9;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  GPIOA->ODR &=~(1<<4);
+  
   GPIO_InitStruct.Pin = GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
@@ -429,12 +612,17 @@ int spi_init(void)
 
   //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
 }
-timer_t timer_spi;
+timer_t timer_spi, timer_xs;
+static uint8_t temp_out[0x80] = {0x00,0x00,0x00,0x44};
+static uint8_t temp_in[0x80] = {0x00,0x00,0x00,0x00};
+static int sleep_start = 0;
 static void timer_cb2(timer_t id)
 {
-  static uint8_t temp_out[0x80] = {0x11,0x22,0x33,0x44};
-  static uint8_t temp_in[0x80] = {0xff,0xff,0x56,0x78};
-  if(id == timer_5s)
+  if(id == timer_30s)
+  {
+    sleep = 1;
+  }
+  if(id == timer_xs)
   {
     //timer_start(timer_spi);
   }
@@ -443,13 +631,51 @@ static void timer_cb2(timer_t id)
     static int fsm = 0;
     switch(fsm++){
       case 0:
+        if(temp_in[1] == 3)
+          HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_SET);
+        if(RCC->BDCR & RCC_BDCR_LSERDY && RCC->CR & RCC_CR_HSERDY)
+          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);
+        if(modem_work)
+          HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET);
+        if(temp_in[1] == 3)
+        {
+          if(RCC->BDCR & RCC_BDCR_LSERDY && RCC->CR & RCC_CR_HSERDY)
+          {
+            if(modem_work)
+            {
+              if(!sleep_start)
+              {
+                sleep_start = 1;
+                timer_start(timer_30s);
+              }
+            }
+          }
+        }
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
         break;
       case 1:
-        HAL_SPI_TransmitReceive(&spi, (uint8_t *)&temp_out, (uint8_t*)&temp_in, sizeof(temp_out), 100);
+        if(sleep_start)
+          temp_out[1] = 1;
+        HAL_SPI_TransmitReceive(&spi, (uint8_t *)&temp_out, (uint8_t*)&temp_in, 4, 100);
         break;
       case 2:
         HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+        
+        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_3, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_RESET);
+        break;
+      case 3:
+        static int temp = 0;
+        if(sleep)
+        {
+          temp++;
+          if(temp > 100)
+          {
+            temp =0;
+            //sleep_deep();
+          }
+        }
         break;
       default:
         if(temp_in[0] == 0x01)
@@ -475,12 +701,116 @@ static void timer_cb2(timer_t id)
     };
   }
 }
-
+int test_init()
+{
+  
+  
+  //while(1);
+  RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN | RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN  | RCC_AHB2ENR_GPIOEEN | RCC_AHB2ENR_GPIOGEN;
+  GPIOB->MODER &=~(GPIO_MODER_MODE8 | GPIO_MODER_MODE9);
+  GPIOB->MODER |= GPIO_MODER_MODE8_0 | GPIO_MODER_MODE9_0;
+  GPIOA->MODER &=~( GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE6 | GPIO_MODER_MODE8 | GPIO_MODER_MODE15);
+  GPIOA->MODER |= GPIO_MODER_MODE8_0;
+  GPIOA->MODER |= GPIO_MODER_MODE15_0;
+  GPIOA->ODR &=~(1<<15);
+  {volatile int temp = 9999999;while(temp>0){temp--;};}
+  GPIOA->ODR |= (1<<15);
+  GPIOA->MODER &=~(GPIO_MODER_MODE15);
+  GPIOA->ODR &=~(1<<8);
+  //timer_init(); 
+  RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
+  PWR->CR1 |= PWR_CR1_DBP;
+  RCC->APB1ENR2 |= RCC_APB1ENR2_LPUART1EN;
+  RCC->APB1ENR1 |= RCC_APB1ENR1_USART3EN;
+  RCC->BDCR = RCC_BDCR_BDRST;
+  RCC->BDCR &=~RCC_BDCR_BDRST;
+  RCC->BDCR |= RCC_BDCR_LSEDRV_1 | RCC_BDCR_LSEDRV_0;
+  RCC->BDCR |= RCC_BDCR_RTCSEL_0 | RCC_BDCR_LSECSSD;
+  RCC->BDCR |= RCC_BDCR_LSEON;
+  temp = RCC->BDCR;
+  //WAIT_FLAG( ! RCC->BDCR & RCC_BDCR_LSERDY);
+  while(!( temp = RCC->BDCR & RCC_BDCR_LSERDY) ){};
+  RCC->BDCR |= RCC_BDCR_RTCEN;
+  
+  EXTI->PR1    =  RTC_WKUP_EXTI; // Clear IT pending bit
+  EXTI->IMR1  |=  RTC_WKUP_EXTI; // Enable interrupt request from EXTI line
+  EXTI->EMR1  &= ~RTC_WKUP_EXTI; // Disable event on EXTI line
+  EXTI->RTSR1 |=  RTC_WKUP_EXTI; // Trigger rising edge enabled
+  EXTI->FTSR1 &= ~RTC_WKUP_EXTI; // Trigger falling edge disabled
+  RTC->WPR = 0xCA;
+  RTC->WPR = 0x53;
+  RTC->CR &=~RTC_CR_WUTE;
+  
+  while(! RTC->ISR & RTC_ISR_WUTWF){};
+  
+  RTC->WUTR = 0x0000;
+  RTC->CR &= ~RTC_CR_WUCKSEL;
+  RTC->CR |=  RTC_CR_WUCKSEL_2;
+  //RTC->CR |= RTC_CR_WUTIE;
+  //RTC->CR |= RTC_CR_WUTE;
+  RTC->WPR = 0xFF;
+    
+  RTC->ISR &=~RTC_ISR_RSF;
+  RTC->ISR &=~RTC_ISR_WUTF;
+  RTC->ISR = 0;
+  RTC->CR &=~RTC_CR_WUTE;
+  RTC->CR = 0;
+  NVIC_EnableIRQ(LPUART1_IRQn);
+  NVIC_EnableIRQ(UART4_IRQn);
+  NVIC_EnableIRQ(RTC_WKUP_IRQn);
+  //RTC->CR |= RTC_CR_WUTIE;
+  //RTC->CR |= RTC_CR_WUTE;
+  
+  GPIOC->MODER  &= ~(GPIO_MODER_MODE5);
+  GPIOC->MODER  |= (GPIO_MODER_MODE5_0);
+  
+  GPIOA->MODER  &= ~(GPIO_MODER_MODE7);
+  GPIOA->MODER  |= (GPIO_MODER_MODE7_0);
+  
+  
+  GPIOC->ODR |= GPIO_ODR_OD5;
+  
+  uart_init();
+  uart_rs_init();
+  //SysTick->LOAD = 4000000 / 1000 - 1; // 1 ms
+  //SysTick->VAL = 0;
+  //SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
+  timer_5s = timer_create(TIMER_REPEAT, TIMER_SECOND(2), timer_cb);
+  timer_1s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb);
+  timer_2s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(2), timer_cb);
+#undef DEBUG
+#ifdef DEBUG
+  printf("Init CPU\r\n");
+#endif
+}
+int test()
+{
+  while(1){
+#ifdef DEBUG
+     list_t *item;
+#endif
+#ifdef DEBUG  
+    item = list_pop_last(&message_out);
+    if(item)
+    { 
+      if(item->data)printf((char*)item->data);
+      if(item->data)free(item->data);
+      free(item);
+    }
+#endif
+    timer_handle();
+    if(sleep)
+      sleep_deep();
+  }
+}
 int main()
 {
-  timer_init();
-  HAL_Init();
   SystemClock_Config();
+  RCC->CR |= RCC_CR_HSEON;
+  RCC->BDCR |= RCC_BDCR_LSEON;
+  timer_init();
+  test_init();
+  HAL_Init();
   __HAL_RCC_PWR_CLK_ENABLE();
   HAL_PWREx_EnableVddUSB();
   
@@ -495,10 +825,15 @@ int main()
   
     /* Start Device Process */
   USBD_Start(&USBD_Device);
-  timer_5s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb2);
+  timer_30s = timer_create(TIMER_ONE_SHOT, TIMER_SECOND(15), timer_cb2);
+  timer_xs = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb2);
   timer_spi = timer_create(TIMER_REPEAT, TIMER_MILLISECOND(10), timer_cb2);
   timer_start(timer_spi);
   spi_init();
+  
+  test();
+  
+  
   
   while(1)
   {
@@ -645,6 +980,7 @@ static void SystemClock_Config(void)
   }
   
 #endif /* USB_USE_LSE_MSI_CLOCK */
+  SystemCoreClockUpdate();
 }
 
 
