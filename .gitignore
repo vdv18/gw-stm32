@@ -3,6 +3,8 @@
 *.ko
 *.obj
 *.elf
+# Text files
+*.txt
 
 # Precompiled Headers
 *.gch
@@ -32,6 +34,7 @@
 Debug/
 project/iar/settings/
 project/iar/Debug/
+project/iar/Release/
 *.dep
-*.ewd
+# *.ewd
 *.ewt
