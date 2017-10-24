@@ -806,13 +806,18 @@ int test()
 int main()
 {
   SystemClock_Config();
+  __HAL_RCC_PWR_CLK_ENABLE();
+  HAL_PWREx_EnableVddUSB();
   RCC->CR |= RCC_CR_HSEON;
   RCC->BDCR |= RCC_BDCR_LSEON;
   timer_init();
   test_init();
   HAL_Init();
-  __HAL_RCC_PWR_CLK_ENABLE();
-  HAL_PWREx_EnableVddUSB();
+  timer_30s = timer_create(TIMER_ONE_SHOT, TIMER_SECOND(15), timer_cb2);
+  timer_xs = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb2);
+  timer_spi = timer_create(TIMER_REPEAT, TIMER_MILLISECOND(100), timer_cb2);
+  timer_start(timer_spi);
+  spi_init();
   
   /* Init MSC Application */
   USBD_Init(&USBD_Device, &MSC_Desc, 0);
@@ -825,11 +830,6 @@ int main()
   
     /* Start Device Process */
   USBD_Start(&USBD_Device);
-  timer_30s = timer_create(TIMER_ONE_SHOT, TIMER_SECOND(15), timer_cb2);
-  timer_xs = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb2);
-  timer_spi = timer_create(TIMER_REPEAT, TIMER_MILLISECOND(10), timer_cb2);
-  timer_start(timer_spi);
-  spi_init();
   
   test();
   
