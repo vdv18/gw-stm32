@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ff.h"
-
+#undef DEBUG
 #ifdef DEBUG
 #include <stdlib.h>
 #include <stdio.h>
@@ -15,6 +15,7 @@ static list_head_t message_out;
 #endif
 
 
+#include "stm32l4xx_hal.h"
 #define USE_LPUART1
 //#define _TEST_
 #ifdef _TEST_
@@ -126,6 +127,7 @@ void LPUART1_IRQHandler(void)
     
     if(strstr(rx_buffer,"\r\nOK\r\n") != NULL)
     {
+      //printf("SIM800C answere: %s\r\n",rx_buffer);
       modem_work = 1;
       //timer_stop(timer_5s);
     }
@@ -177,8 +179,10 @@ static uint8_t uart4_test[10] = 0;
 void UART4_IRQHandler(void)
 {
   static uint8_t *p = uart4_test;
+  
   if(UART4->ISR & USART_ISR_RXNE)
   {
+    GPIOC->ODR ^= (1<<3);
     if((p >= &uart4_test[10]) || (p < &uart4_test[0])) p = &uart4_test[0];
     *p++ = UART4->RDR;
   }
@@ -290,7 +294,8 @@ void uart_init()
   RCC->APB1ENR2 |= RCC_APB1ENR2_LPUART1EN;
   RCC->APB1ENR1 |= RCC_APB1ENR1_USART3EN;
   prx_buffer = rx_buffer;
-  RCC->CCIPR = 0x00;//(0x03<<10);
+  
+  RCC->CCIPR &=~RCC_CCIPR_LPUART1SEL;//(0x03<<10);
 #ifdef _TEST_
   RCC->CCIPR |= RCC_CCIPR_LPUART1SEL_0;
 #else
@@ -358,7 +363,7 @@ void uart_rs_init()
   RCC->APB1ENR1 |= RCC_APB1ENR1_UART4EN;
   //GPIOA->ODR |= 0<<8;
   GPIOA->MODER &=~( GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE6 | GPIO_MODER_MODE8);
-  GPIOA->MODER |= GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1 | GPIO_MODER_MODE6_0;
+  GPIOA->MODER |= GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1 | GPIO_MODER_MODE6_0 | GPIO_MODER_MODE8_0;
   GPIOB->MODER &=~( GPIO_MODER_MODE14 );
   
   GPIOB->MODER &=~( GPIO_MODER_MODE14 );
@@ -372,7 +377,7 @@ void uart_rs_init()
 #ifdef _TEST_
   UART4->BRR = 0x1A1;  
 #else
-  UART4->BRR = 8333; 
+  UART4->BRR = (((80000000) + ((115200)/2))/(115200)); 
 #endif
   UART4->CR1 |= USART_CR1_UE;
 }
@@ -476,7 +481,6 @@ void main()
 #include "usbd_desc.h"
 #include "usbd_msc.h"
 #include "usbd_storage.h"
-#include "stm32l4xx_hal.h"
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 USBD_HandleTypeDef USBD_Device;
@@ -498,14 +502,16 @@ void OTG_FS_IRQHandler(void)
 FATFS SDFatFs;  /* File system object for SD card logical drive */
 FIL MyFile;     /* File object */
 char SDPath[4]; /* SD card logical drive path */
-static uint8_t rtext[100];    
+static uint8_t rtext[100];   
 static void timer_cb1(timer_t id)
 {
   if(id == timer_5s)
   {
     if(f_mount(&SDFatFs, "1:/", 0) == FR_OK)
     {
-      if(f_open(&MyFile, "1:/STM32.TXT", FA_READ) == FR_OK)
+      
+      if(f_open(&MyFile, "1:/autorun.inf", FA_READ) == FR_OK)
+      //if(f_open(&MyFile, "1:/STM32.TXT", FA_READ) == FR_OK)
       {
         FRESULT res;
         uint32_t bytesread; 
@@ -520,6 +526,7 @@ static void timer_cb1(timer_t id)
     }
     
   }
+  GPIOA->ODR &=~GPIO_ODR_OD6;
 }
 
 static SPI_HandleTypeDef spi = { .Instance = SPI1 };
@@ -616,10 +623,12 @@ timer_t timer_spi, timer_xs;
 static uint8_t temp_out[0x80] = {0x00,0x00,0x00,0x44};
 static uint8_t temp_in[0x80] = {0x00,0x00,0x00,0x00};
 static int sleep_start = 0;
+static char ch = 0;
 static void timer_cb2(timer_t id)
 {
   if(id == timer_30s)
   {
+    printf("Sleep prepare\r\n");
     sleep = 1;
   }
   if(id == timer_xs)
@@ -629,6 +638,8 @@ static void timer_cb2(timer_t id)
   if(id == timer_spi)
   {
     static int fsm = 0;
+    //put_rs_char('0'+ch++);
+    //if(ch>9)ch=0;
     switch(fsm++){
       case 0:
         if(temp_in[1] == 3)
@@ -701,22 +712,28 @@ static void timer_cb2(timer_t id)
     };
   }
 }
+static void deleay_c(int cylce)
+{
+  {volatile int temp = cylce;while(temp>0){temp--;};}
+}
 int test_init()
 {
   
   
   //while(1);
   RCC->AHB2ENR |= RCC_AHB2ENR_GPIOCEN | RCC_AHB2ENR_GPIOAEN | RCC_AHB2ENR_GPIOBEN  | RCC_AHB2ENR_GPIOEEN | RCC_AHB2ENR_GPIOGEN;
-  GPIOB->MODER &=~(GPIO_MODER_MODE8 | GPIO_MODER_MODE9);
-  GPIOB->MODER |= GPIO_MODER_MODE8_0 | GPIO_MODER_MODE9_0;
-  GPIOA->MODER &=~( GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE6 | GPIO_MODER_MODE8 | GPIO_MODER_MODE15);
-  GPIOA->MODER |= GPIO_MODER_MODE8_0;
-  GPIOA->MODER |= GPIO_MODER_MODE15_0;
+  GPIOB->MODER &=~(GPIO_MODER_MODE8 | GPIO_MODER_MODE9 | GPIO_MODER_MODE14);
+  GPIOC->MODER &=~(GPIO_MODER_MODE6);
+  GPIOB->MODER |= GPIO_MODER_MODE8_0 | GPIO_MODER_MODE9_0 | GPIO_MODER_MODE14_0;
+  GPIOA->MODER &=~( GPIO_MODER_MODE0 | GPIO_MODER_MODE1 | GPIO_MODER_MODE4 | GPIO_MODER_MODE6 | GPIO_MODER_MODE8 | GPIO_MODER_MODE15);
+  GPIOA->MODER |= GPIO_MODER_MODE8_0 | GPIO_MODER_MODE4_0 | GPIO_MODER_MODE8_0;
+  GPIOB->MODER |= GPIO_MODER_MODE14_0;
+  GPIOA->ODR &=~(1<<8);
   GPIOA->ODR &=~(1<<15);
-  {volatile int temp = 9999999;while(temp>0){temp--;};}
+  deleay_c(1000);
   GPIOA->ODR |= (1<<15);
   GPIOA->MODER &=~(GPIO_MODER_MODE15);
-  GPIOA->ODR &=~(1<<8);
+  GPIOA->ODR &=~(1<<8 | 1<<4);
   //timer_init(); 
   RCC->APB1ENR1 |= RCC_APB1ENR1_PWREN;
   PWR->CR1 |= PWR_CR1_DBP;
@@ -764,20 +781,27 @@ int test_init()
   GPIOC->MODER  &= ~(GPIO_MODER_MODE5);
   GPIOC->MODER  |= (GPIO_MODER_MODE5_0);
   
-  GPIOA->MODER  &= ~(GPIO_MODER_MODE7);
-  GPIOA->MODER  |= (GPIO_MODER_MODE7_0);
+  GPIOA->MODER  &= ~(GPIO_MODER_MODE7 | GPIO_MODER_MODE6);
+  GPIOA->MODER  |= (GPIO_MODER_MODE7_0 | GPIO_MODER_MODE6_0);
   
   
   GPIOC->ODR |= GPIO_ODR_OD5;
   
-  uart_init();
   uart_rs_init();
+  uart_init();
   //SysTick->LOAD = 4000000 / 1000 - 1; // 1 ms
   //SysTick->VAL = 0;
   //SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
   timer_5s = timer_create(TIMER_REPEAT, TIMER_SECOND(2), timer_cb);
   timer_1s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(1), timer_cb);
   timer_2s = timer_create(TIMER_REPEAT_START, TIMER_SECOND(2), timer_cb);
+  GPIOA->ODR |= GPIO_ODR_OD6;
+  printf("Init CPU\r\n");
+  deleay_c(100);  
+  GPIOA->ODR &=~GPIO_ODR_OD6;
+  deleay_c(10000);
+  GPIOA->ODR |= GPIO_ODR_OD6;
+  printf("Init CPU\r\n");
 #undef DEBUG
 #ifdef DEBUG
   printf("Init CPU\r\n");
@@ -799,10 +823,19 @@ int test()
     }
 #endif
     timer_handle();
-    if(sleep)
+    if(sleep && (GPIOC->IDR & (1<<6) != 0))
       sleep_deep();
   }
 }
+
+__ATTRIBUTES size_t __write(int std, const unsigned char *buff, size_t size)
+{
+  while(size--)
+  {
+    put_rs_char(*buff++);
+  }
+}
+
 int main()
 {
   SystemClock_Config();
@@ -831,6 +864,7 @@ int main()
     /* Start Device Process */
   USBD_Start(&USBD_Device);
   
+  timer_cb1(timer_5s);
   test();
   
   
@@ -885,7 +919,6 @@ static void SystemClock_Config(void)
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct;
-
 #define USB_USE_LSE_MSI_CLOCK
 #if defined (USB_USE_LSE_MSI_CLOCK)
  
@@ -908,8 +941,8 @@ static void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM            = 6;
   RCC_OscInitStruct.PLL.PLLN            = 40;
   RCC_OscInitStruct.PLL.PLLP            = 7;
-  RCC_OscInitStruct.PLL.PLLQ            = 8;
-  RCC_OscInitStruct.PLL.PLLR            = 8;
+  RCC_OscInitStruct.PLL.PLLQ            = 4;
+  RCC_OscInitStruct.PLL.PLLR            = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -942,7 +975,7 @@ static void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLM = 1;
   RCC_OscInitStruct.PLL.PLLN = 20;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLP = 7;
